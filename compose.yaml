@@ -1,0 +1,35 @@
+services:
+  migrate:
+    build: .
+    command: ["migrate"]
+    env_file: .env
+    volumes:
+      - media_data:/data
+    restart: "no"
+
+  bot:
+    build: .
+    command: ["bot"]
+    env_file: .env
+    volumes:
+      - media_data:/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  worker:
+    build: .
+    command: ["worker"]
+    env_file: .env
+    volumes:
+      - media_data:/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+volumes:
+  media_data:

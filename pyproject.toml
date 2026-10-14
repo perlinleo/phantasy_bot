@@ -1,0 +1,72 @@
+[project]
+name = "phantasy-bot"
+version = "0.7.0"
+description = "Private Telegram media bot"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "aiogram>=3.22,<4",
+  "aiosqlite>=0.21,<1",
+  "alembic>=1.16,<2",
+  "pillow>=12.3,<13",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.10,<3",
+  "sqlalchemy[asyncio]>=2.0.43,<3",
+]
+
+[project.scripts]
+media-bot = "media_bot.__main__:main"
+
+[dependency-groups]
+dev = [
+  "bandit[toml]>=1.8,<2",
+  "mypy>=1.17,<2",
+  "pip-audit>=2.9,<3",
+  "pytest>=9.0.3,<10",
+  "pytest-asyncio>=1.1,<2",
+  "pytest-cov>=6.2,<7",
+  "ruff>=0.12,<1",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/media_bot"]
+artifacts = ["src/media_bot/VERSION"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=media_bot --cov-report=term-missing --cov-report=xml --cov-report=json --cov-fail-under=90"
+
+[tool.coverage.run]
+branch = true
+source = ["src/media_bot"]
+omit = [
+  "*/__main__.py", # CLI process entry points are covered by smoke tests, not unit coverage.
+  "*/adapters/telegram/app.py", # Bot API polling/delivery is covered by router tests and live acceptance.
+]
+
+[tool.coverage.report]
+exclude_also = [
+  "if __name__ == .__main__.:", # Interpreter guard is exercised by packaging, not pytest.
+]
+show_missing = true
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"] # Assertions are used only for internal invariants, never request validation.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["media_bot"]

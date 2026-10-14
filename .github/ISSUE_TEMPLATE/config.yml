@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/perlinleo/phantasy_bot/security/advisories/new
+    about: Report privately. Do not use a public issue.
+  - name: Support and questions
+    url: https://github.com/perlinleo/phantasy_bot/discussions
+    about: Use Discussions when enabled.
