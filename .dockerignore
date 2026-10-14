@@ -8,3 +8,12 @@ __pycache__
 data
 tests
 docs
+output
+results
+jobs
+backups
+dist
+build
+.coverage
+coverage.xml
+coverage.json

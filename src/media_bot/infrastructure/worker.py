@@ -50,7 +50,11 @@ async def _drain_stderr(reader: asyncio.StreamReader | None, job_id: str) -> Non
 
 
 async def run_worker(
-    service: JobService, data_dir: Path, enabled_plugins: set[str], timeout_seconds: int = 300
+    service: JobService,
+    data_dir: Path,
+    enabled_plugins: set[str],
+    timeout_seconds: int = 300,
+    assets_root: Path | None = None,
 ) -> None:
     """Claim one SQLite job at a time and render it in a token-free child process."""
     await service.recover_expired_leases()
@@ -90,6 +94,7 @@ async def run_worker(
             str(output_path),
             "--plugins",
             ",".join(sorted(enabled_plugins)),
+            *(["--assets-root", str(assets_root.resolve())] if assets_root is not None else []),
             env=environment,
             start_new_session=True,
             stdout=asyncio.subprocess.PIPE,

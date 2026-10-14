@@ -2,7 +2,9 @@ from typing import Any
 
 from media_bot.plugin_sdk.contracts import PluginSpec
 from media_bot.plugins.blood_gothic_emoji import SPEC as BLOOD_GOTHIC_EMOJI
+from media_bot.plugins.comedy_stage import SPEC as COMEDY_STAGE
 from media_bot.plugins.ghost_emoji import SPEC as GHOST_EMOJI
+from media_bot.plugins.glamour_letters import SPEC as GLAMOUR_LETTERS
 from media_bot.plugins.gothic_metal_title import SPEC as GOTHIC_METAL_TITLE
 from media_bot.plugins.iron_gothic_emoji import SPEC as IRON_GOTHIC_EMOJI
 from media_bot.plugins.space_crawl import SPEC as SPACE_CRAWL
@@ -13,6 +15,8 @@ from media_bot.plugins.text_to_emoji import SPEC as TEXT_TO_EMOJI
 def enabled_plugins(enabled: set[str]) -> dict[str, PluginSpec[Any, Any]]:
     available: dict[str, PluginSpec[Any, Any]] = {
         TEXT_CARD.id: TEXT_CARD,
+        GLAMOUR_LETTERS.id: GLAMOUR_LETTERS,
+        COMEDY_STAGE.id: COMEDY_STAGE,
         SPACE_CRAWL.id: SPACE_CRAWL,
         TEXT_TO_EMOJI.id: TEXT_TO_EMOJI,
         BLOOD_GOTHIC_EMOJI.id: BLOOD_GOTHIC_EMOJI,

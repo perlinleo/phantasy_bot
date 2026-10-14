@@ -10,6 +10,7 @@ from media_bot.bootstrap import configure_logging, with_access_service
 from media_bot.config import Settings
 from media_bot.plugin_sdk.contracts import JobContext
 from media_bot.plugins.registry import enabled_plugins
+from media_bot.services.character_assets import validate_character_assets
 
 
 async def migrate(settings: Settings) -> None:
@@ -34,6 +35,7 @@ async def render_text_card(settings: Settings, text: str, output: Path) -> None:
 
 
 async def bot(settings: Settings) -> None:
+    validate_character_assets(settings.enabled_plugins, settings.plugin_assets_dir)
     from media_bot.adapters.telegram.app import run_bot
     from media_bot.application.jobs import JobService
 
@@ -66,6 +68,7 @@ async def allow(settings: Settings, telegram_id: int) -> None:
 
 
 async def worker(settings: Settings) -> None:
+    validate_character_assets(settings.enabled_plugins, settings.plugin_assets_dir)
     from media_bot.application.jobs import JobService
     from media_bot.infrastructure.db import make_engine, make_session_factory
     from media_bot.infrastructure.worker import run_worker
@@ -82,15 +85,18 @@ async def worker(settings: Settings) -> None:
             settings.data_dir,
             settings.enabled_plugins,
             timeout_seconds=settings.job_timeout_seconds,
+            assets_root=settings.plugin_assets_dir,
         )
     finally:
         await engine.dispose()
 
 
-async def run_payload(input_path: Path, output_path: Path, plugins: set[str]) -> None:
+async def run_payload(
+    input_path: Path, output_path: Path, plugins: set[str], assets_root: Path | None = None
+) -> None:
     from media_bot.infrastructure.runner_exec import execute
 
-    await execute(input_path, output_path, plugins)
+    await execute(input_path, output_path, plugins, assets_root)
 
 
 def backup(settings: Settings) -> None:
@@ -134,6 +140,7 @@ def parser() -> argparse.ArgumentParser:
     payload.add_argument("--input", type=Path, required=True)
     payload.add_argument("--output", type=Path, required=True)
     payload.add_argument("--plugins", required=True)
+    payload.add_argument("--assets-root", type=Path)
     render = sub.add_parser("render-text-card", help="Render a text_card PNG without Telegram")
     render.add_argument("--text", required=True)
     render.add_argument("--output", type=Path, required=True)
@@ -147,7 +154,9 @@ def parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = parser().parse_args()
     if args.command == "run-payload":
-        asyncio.run(run_payload(args.input, args.output, set(args.plugins.split(","))))
+        asyncio.run(
+            run_payload(args.input, args.output, set(args.plugins.split(",")), args.assets_root)
+        )
         return
     settings = Settings()
     configure_logging(settings.log_level)
@@ -170,6 +179,7 @@ def main() -> None:
     else:
         plugins = enabled_plugins(settings.enabled_plugins)
         if args.action == "validate":
+            validate_character_assets(settings.enabled_plugins, settings.plugin_assets_dir)
             print("Plugin registry is valid")
         else:
             print(

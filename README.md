@@ -10,6 +10,11 @@ watch one editable status card, and receive a local result through Telegram.
 ## Current capabilities
 
 - PNG text cards with Cyrillic input.
+- `glamour_letters` («Крутые тёлки»): fashion models holding metallic user-supplied letters,
+  three stage palettes, 1600×1000 PNG.
+- `comedy_stage`: illustrated Pavel Volya and Garik Kharlamov on an animated comedy stage,
+  user text on a readable board, 6/8-second silent MP4. Both character plugins require the
+  separate pinned artwork pack; see [setup and offline previews](docs/character-plugins.md).
 - H.264 MP4 `space_crawl` renderer.
 - Custom emoji composition with PNG fallback.
 - Halloween emoji styles.

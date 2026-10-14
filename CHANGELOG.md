@@ -3,19 +3,35 @@
 All notable changes follow [Semantic Versioning](https://semver.org/). Until `1.0.0`, minor
 versions may include incompatible changes while the product remains in beta.
 
-## [Unreleased]
+## [0.8.0] - 2026-10-14
 
-### Documentation
+### Added
 
-- Plan two new plugins: `glamour_letters` («Крутые тёлки»), a glamour poster with
-  adult fictional models holding user-supplied letters, and `comedy_stage`, an animated
-  Comedy Club-inspired stage with stylized Pavel Volya and Garik Kharlamov.
-- Document current plugin/SDK constraints, asset preparation, rendering and UI integration,
-  implementation stages, offline checks and live visual acceptance in
-  [the implementation plan](docs/plans/glamour-and-comedy-plugins.md).
-- Specify the complete asset path from operator configuration to the isolated renderer,
-  immutable asset versions, startup validation and subprocess checks; record verified CI baseline.
-  These plugins are planned, not implemented; runtime versions remain unchanged.
+- Opt-in `glamour_letters` («Крутые тёлки»): four adult fictional models supporting
+  metallic user letters, Cyrillic-aware bounded layout and three PNG poster palettes.
+- Opt-in `comedy_stage`: recognizable illustrated Pavel Volya and Garik Kharlamov,
+  interpolated poses, animated lighting, readable user text and silent 720p H.264 MP4.
+- Pinned external artwork pack with SHA-256, sprite bounds and palm anchors, startup
+  validation, token-free runner asset-path forwarding and a read-only Compose overlay.
+- Explicit Telegram presets, refreshed confirmation after settings changes, and tests
+  for text/layout, assets, actual media encoding, subprocess failures and SQLite persistence.
+- [Implementation plan](docs/plans/glamour-and-comedy-plugins.md),
+  [setup instructions](docs/character-plugins.md) and documented visual/asset decisions.
+
+### Fixed
+
+- Reject stale, foreign and cross-plugin preset callbacks; make revision updates atomic.
+- Reject confirmation replay by a different user, including already-submitted drafts.
+- Drain FFmpeg stderr continuously with bounded diagnostics and reap the encoder on
+  renderer failure or broken pipe; validate positive duration and the new animation's
+  frame rate, pixel format and faststart atom order.
+- Exclude generated artwork and media from the Docker build context.
+
+### Limitations
+
+- Generated artwork is supplied separately, never committed; new plugins require its installation.
+- Live Telegram acceptance still requires a real deployment. Comedy uses illustrated poses,
+  without voices or lip sync; longer glamour strings reuse the four models.
 
 ## [0.7.0] - 2026-10-14
 
