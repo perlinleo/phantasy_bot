@@ -3,6 +3,18 @@
 All notable changes follow [Semantic Versioning](https://semver.org/). Until `1.0.0`, minor
 versions may include incompatible changes while the product remains in beta.
 
+## [Unreleased]
+
+### Documentation
+
+- Plan two new plugins: `glamour_letters` («Крутые тёлки»), a glamour poster with
+  adult fictional models holding user-supplied letters, and `comedy_stage`, an animated
+  Comedy Club-inspired stage with stylized Pavel Volya and Garik Kharlamov.
+- Document current plugin/SDK constraints, asset preparation, rendering and UI integration,
+  implementation stages, offline checks and live visual acceptance in
+  [the implementation plan](docs/plans/glamour-and-comedy-plugins.md).
+  These plugins are planned, not implemented; runtime versions remain unchanged.
+
 ## [0.7.0] - 2026-10-14
 
 ### Added
