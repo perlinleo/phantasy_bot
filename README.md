@@ -1,7 +1,5 @@
 # Phantasy Bot
 
-force push check
-
 Private, allowlisted Telegram bot for rendering media through trusted in-repository plugins. It is
 designed for personal/private chats: users select a tool, create a persistent draft, confirm a job,
 watch one editable status card, and receive a local result through Telegram.
