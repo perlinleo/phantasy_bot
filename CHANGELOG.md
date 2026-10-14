@@ -26,6 +26,7 @@ versions may include incompatible changes while the product remains in beta.
   renderer failure or broken pipe; validate positive duration and the new animation's
   frame rate, pixel format and faststart atom order.
 - Exclude generated artwork and media from the Docker build context.
+- Install FFmpeg and Cyrillic fonts in the CI test job for real media integration checks.
 
 ### Limitations
 

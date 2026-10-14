@@ -10,6 +10,8 @@ not only synthetic fixtures. Live Telegram acceptance has not been run.
   and Bandit passed. Existing plugin regressions are included.
 - `uv build`: sdist/wheel built. The wheel includes `media_bot/assets/characters-v1.json`
   and excludes generated artwork; version files and package metadata are 0.8.0.
+- CI test setup explicitly installs FFmpeg and DejaVu fonts. The first implementation CI
+  run exposed their absence on the hosted runner; real media tests remain mandatory.
 - Real isolated `run-payload` calls from `/tmp`, with only PATH in the environment:
   short/max PNG and 6/8-second MP4 passed. No Telegram token or `.env` is loaded.
 - Real process-group SIGTERM during frame production stopped the runner and encoder;
