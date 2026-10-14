@@ -13,6 +13,8 @@ versions may include incompatible changes while the product remains in beta.
 - Document current plugin/SDK constraints, asset preparation, rendering and UI integration,
   implementation stages, offline checks and live visual acceptance in
   [the implementation plan](docs/plans/glamour-and-comedy-plugins.md).
+- Specify the complete asset path from operator configuration to the isolated renderer,
+  immutable asset versions, startup validation and subprocess checks; record verified CI baseline.
   These plugins are planned, not implemented; runtime versions remain unchanged.
 
 ## [0.7.0] - 2026-10-14
