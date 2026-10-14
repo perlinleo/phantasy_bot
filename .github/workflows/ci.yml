@@ -31,6 +31,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Install media test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.8.22"
@@ -59,4 +63,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t phantasy-bot:ci .
-      - run: docker build .
+      - run: docker run --rm -e ENABLED_PLUGINS=text_card phantasy-bot:ci plugins validate
+      - run: docker run --rm -e ENABLED_PLUGINS=text_card phantasy-bot:ci render-text-card --text Smoke --output /tmp/smoke

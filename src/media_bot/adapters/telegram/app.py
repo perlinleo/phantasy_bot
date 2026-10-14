@@ -1,6 +1,5 @@
 import asyncio
 import html
-import json
 import logging
 from contextlib import suppress
 from pathlib import Path
@@ -17,7 +16,9 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     Message,
 )
+from pydantic import ValidationError
 
+from media_bot.adapters.telegram.presets import PRESETS, confirmation
 from media_bot.application.access import AccessService
 from media_bot.application.jobs import JobService
 from media_bot.domain.access import AccessDecision
@@ -79,6 +80,12 @@ def build_dispatcher(
         if message.chat.type != "private" or message.from_user is None:
             return False
         decision = await access.decision_for(message.from_user.id, message.from_user.username)
+        return decision is not AccessDecision.DENIED
+
+    async def callback_allowed(callback: CallbackQuery) -> bool:
+        if not isinstance(callback.message, Message) or callback.message.chat.type != "private":
+            return False
+        decision = await access.decision_for(callback.from_user.id, callback.from_user.username)
         return decision is not AccessDecision.DENIED
 
     @router.message(Command("whoami"))
@@ -306,6 +313,10 @@ def build_dispatcher(
             return
         try:
             draft = await jobs.save_text(message.from_user.id, text)
+        except ValidationError as error:
+            reason = str(error.errors(include_input=False)[0]["msg"]).removeprefix("Value error, ")
+            await message.answer(versioned(html.escape(reason)))
+            return
         except ValueError:
             await message.answer(versioned("Этот ввод не подходит для выбранного инструмента."))
             return
@@ -313,41 +324,33 @@ def build_dispatcher(
             await message.answer("Используйте /new, чтобы создать карточку.")
             return
         spec = plugins[draft.plugin_id]
-        options = json.loads(draft.options_json)
-        text_preview = html.escape((draft.text or "")[:300])
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="Создать", callback_data=f"create:{draft.id}:{draft.revision}"
-                    )
-                ],
-                [InlineKeyboardButton(text="Настройки", callback_data=f"settings:{draft.id}")],
-            ]
+        summary, keyboard = confirmation(
+            spec.id,
+            spec.title,
+            spec.category,
+            draft.id,
+            draft.revision,
+            draft.text or "",
+            draft.options_json,
         )
-        await message.answer(
-            versioned(
-                f"<b>{spec.title}</b>\n\nТекст:\n<blockquote>{text_preview}</blockquote>\n"
-                f"Настройки: <code>{html.escape(json.dumps(options, ensure_ascii=False))}</code>\n"
-                f"Результат: {'MP4 без звука' if spec.category == 'video' else 'PNG'}\n\n"
-                "Проверьте данные и нажмите «Создать»."
-            ),
-            reply_markup=keyboard,
-        )
+        await message.answer(versioned(summary), reply_markup=keyboard)
 
     @router.callback_query(F.data.startswith("settings:"))
     async def settings_menu(callback: CallbackQuery) -> None:
         if callback.from_user is None or callback.data is None or jobs is None:
             return
-        draft = await jobs.get_draft(callback.from_user.id, callback.data.removeprefix("settings:"))
-        if draft is None:
+        if not await callback_allowed(callback):
+            await callback.answer("Доступ недоступен", show_alert=True)
+            return
+        parts = callback.data.split(":")
+        if len(parts) != 3 or not parts[2].isdigit():
+            await callback.answer("Откройте настройки из новой сводки", show_alert=True)
+            return
+        draft = await jobs.get_draft(callback.from_user.id, parts[1])
+        if draft is None or draft.revision != int(parts[2]):
             await callback.answer("Этот шаг уже завершён", show_alert=True)
             return
-        presets = {
-            "text_card": [("Тёмный фон", "dark"), ("Светлый фон", "light")],
-            "space_crawl": [("Коротко: 5 секунд", "short"), ("Обычно: 8 секунд", "normal")],
-            "text_to_emoji": [("Синий", "blue"), ("Фиолетовый", "purple")],
-        }.get(draft.plugin_id, [])
+        presets = PRESETS.get(draft.plugin_id, {})
         if not presets:
             await callback.answer(
                 "Этот инструмент использует настройки по умолчанию", show_alert=True
@@ -355,41 +358,63 @@ def build_dispatcher(
             return
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text=title, callback_data=f"preset:{draft.id}:{preset}")]
-                for title, preset in presets
+                [
+                    InlineKeyboardButton(
+                        text=title, callback_data=f"preset:{draft.id}:{draft.revision}:{key}"
+                    )
+                ]
+                for key, (title, _) in presets.items()
             ]
         )
         await callback.answer()
-        if callback.message is not None:
+        if isinstance(callback.message, Message):
             await callback.message.answer("Выберите вариант настройки:", reply_markup=keyboard)
 
     @router.callback_query(F.data.startswith("preset:"))
     async def apply_preset(callback: CallbackQuery) -> None:
         if callback.from_user is None or callback.data is None or jobs is None:
             return
-        _, draft_id, preset = callback.data.split(":", 2)
-        draft = await jobs.get_draft(callback.from_user.id, draft_id)
-        if draft is None:
+        if not await callback_allowed(callback):
+            await callback.answer("Доступ недоступен", show_alert=True)
+            return
+        parts = callback.data.split(":")
+        if len(parts) != 4 or not parts[2].isdigit():
+            await callback.answer("Некорректная или устаревшая кнопка", show_alert=True)
+            return
+        draft = await jobs.get_draft(callback.from_user.id, parts[1])
+        if draft is None or draft.revision != int(parts[2]):
             await callback.answer("Этот шаг уже завершён", show_alert=True)
             return
-        presets: dict[str, dict[str, object]] = {
-            "dark": {"background": "#15182b", "foreground": "#f8f4e8"},
-            "light": {"background": "#f8f4e8", "foreground": "#15182b"},
-            "short": {"duration_seconds": 5},
-            "normal": {"duration_seconds": 8},
-            "blue": {"background": "#2a72e5"},
-            "purple": {"background": "#6c4ac9"},
-        }
-        updates = presets[preset]
-        updated = await jobs.update_options(callback.from_user.id, draft_id, updates)
-        await callback.answer(
-            "Настройки сохранены" if updated else "Этот шаг уже завершён",
-            show_alert=updated is None,
+        preset = PRESETS.get(draft.plugin_id, {}).get(parts[3])
+        if preset is None:
+            await callback.answer("Этот стиль недоступен для инструмента", show_alert=True)
+            return
+        updated = await jobs.update_options(
+            callback.from_user.id, draft.id, preset[1], expected_revision=draft.revision
         )
+        if updated is None:
+            await callback.answer("Этот шаг уже завершён", show_alert=True)
+            return
+        await callback.answer("Настройки сохранены")
+        spec = plugins[updated.plugin_id]
+        summary, keyboard = confirmation(
+            spec.id,
+            spec.title,
+            spec.category,
+            updated.id,
+            updated.revision,
+            updated.text or "",
+            updated.options_json,
+        )
+        if isinstance(callback.message, Message):
+            await callback.message.answer(versioned(summary), reply_markup=keyboard)
 
     @router.callback_query(F.data.startswith("create:"))
     async def create_job(callback: CallbackQuery) -> None:
         if callback.from_user is None or jobs is None or callback.data is None:
+            return
+        if not await callback_allowed(callback):
+            await callback.answer("Доступ недоступен", show_alert=True)
             return
         parts = callback.data.split(":")
         if len(parts) != 3 or not parts[2].isdigit():
@@ -578,9 +603,18 @@ async def run_bot(token: str, access: AccessService, enabled: set[str], jobs: Jo
             for job in await jobs.progress_jobs():
                 if job.status_message_id is None:
                     continue
-                stage = "Ожидает worker" if job.status == "queued" else html.escape(job.stage)
-                if job.status == "running" and job.stage == "rendering":
-                    stage = "Рендер"
+                stage = (
+                    "Ожидает обработки"
+                    if job.status == "queued"
+                    else {
+                        "rendering": "Создаём изображение"
+                        if plugins[job.plugin_id].category != "video"
+                        else "Создаём кадры",
+                        "encoding": "Собираем ролик",
+                        "validating": "Проверяем результат",
+                        "ready": "Готово к отправке",
+                    }.get(job.stage, html.escape(job.stage))
+                )
                 progress = ""
                 if job.status == "running" and job.fraction is not None:
                     completed = round(job.fraction * 10)
@@ -590,6 +624,15 @@ async def run_bot(token: str, access: AccessService, enabled: set[str], jobs: Jo
                         f"<b>{plugins[job.plugin_id].title}</b>\n{stage}{progress}\n\n{job.id[:8]}",
                         chat_id=job.chat_id,
                         message_id=job.status_message_id,
+                        reply_markup=InlineKeyboardMarkup(
+                            inline_keyboard=[
+                                [
+                                    InlineKeyboardButton(
+                                        text="Отменить", callback_data=f"cancel:{job.id}"
+                                    )
+                                ]
+                            ]
+                        ),
                     )
                 except Exception:
                     LOG.debug("progress card update skipped", exc_info=True)

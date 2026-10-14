@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", enable_decoding=False)
 
     data_dir: Path = Path("/data")
+    plugin_assets_dir: Path | None = None
     owner_telegram_id: int | None = None
     bot_token: SecretStr | None = None
     enabled_plugins: set[str] = Field(default_factory=lambda: {"text_card"})

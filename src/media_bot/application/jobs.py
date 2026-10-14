@@ -76,11 +76,21 @@ class JobService:
             return True
 
     async def update_options(
-        self, user_id: int, draft_id: str, updates: dict[str, object]
+        self,
+        user_id: int,
+        draft_id: str,
+        updates: dict[str, object],
+        expected_revision: int | None = None,
     ) -> Draft | None:
         async with self._sessions() as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
             draft = await session.get(Draft, draft_id)
-            if draft is None or draft.user_id != user_id or draft.status != "editing":
+            if (
+                draft is None
+                or draft.user_id != user_id
+                or draft.status != "editing"
+                or (expected_revision is not None and draft.revision != expected_revision)
+            ):
                 return None
             options = self._plugins[draft.plugin_id].options_model.model_validate_json(
                 draft.options_json
@@ -112,7 +122,7 @@ class JobService:
                 existing = await session.scalar(select(Job).where(Job.submission_key == key))
                 if existing is not None:
                     await session.commit()
-                    return existing
+                    return existing if existing.user_id == user_id else None
                 queued_count = await session.scalar(
                     select(func.count()).select_from(Job).where(Job.status == JobStatus.QUEUED)
                 )

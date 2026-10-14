@@ -14,6 +14,7 @@ class ImageResult(BaseModel):
 @dataclass(frozen=True)
 class JobContext:
     workspace: Path
+    assets_root: Path | None = field(default=None, kw_only=True)
     job_id: str = ""
     attempt_id: str = ""
     _reporter: Callable[[str, float | None], None] | None = field(

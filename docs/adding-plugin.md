@@ -12,3 +12,8 @@
    requires it, and document that decision in `docs/decisions/`.
 6. Add assets with their license and attribution. Never add user input or generated media.
 7. Run `make check` and state unavailable live/Docker checks in the PR.
+
+Character-based plugins can use optional `JobContext.assets_root` for operator-installed,
+versioned artwork. See [character plugins](character-plugins.md) for the pinned manifest,
+startup checks, process-boundary forwarding and Compose overlay. Keep generated artwork
+out of Git and Docker context; do not download it during a user's render.

@@ -1,0 +1,12 @@
+# Optional artwork overlay: docker compose -f compose.yaml -f compose.characters.yaml up
+services:
+  bot:
+    environment:
+      PLUGIN_ASSETS_DIR: /opt/phantasy/characters-v1
+    volumes:
+      - ./output/plugin-assets/v1:/opt/phantasy/characters-v1:ro
+  worker:
+    environment:
+      PLUGIN_ASSETS_DIR: /opt/phantasy/characters-v1
+    volumes:
+      - ./output/plugin-assets/v1:/opt/phantasy/characters-v1:ro
